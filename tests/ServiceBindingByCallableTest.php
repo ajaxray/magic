@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @author Anis Uddin Ahmad <anis.programmer@gmail.com>
  */
-class BasicClassTest extends TestCase
+class ServiceBindingByCallableTest extends TestCase
 {
     private Magic $magic;
 
@@ -26,7 +26,7 @@ class BasicClassTest extends TestCase
 
     public function testServiceMappingWithoutConstructor()
     {
-        $this->magic->map('simple', Simplest::class);
+        $this->magic->map('simple', fn($m, $params) => new Simplest());
 
         $obj = $this->magic->get('simple');
         $this->assertEquals('b', $obj->a);
@@ -34,7 +34,7 @@ class BasicClassTest extends TestCase
 
     public function testServiceMappingWithScalarParamConstructor()
     {
-        $this->magic->map('greeter', GreetWithConstructor::class, ['name' => 'Anis']);
+        $this->magic->map('greeter', fn($m, $params) => new GreetWithConstructor($params['name']), ['name' => 'Anis']);
 
         /** @var GreetWithConstructor $obj */
         $obj = $this->magic->get('greeter');
@@ -43,13 +43,27 @@ class BasicClassTest extends TestCase
 
     public function testServiceMappingWithObjectParamConstructor()
     {
-        // email - requires by GreetMailerWithConstructor's constructor
-        // name - requires by it's constructor param GreetWithConstructor's constructor
-        $this->magic->map('greet-mailer', GreetMailerWithConstructor::class, ['name' => 'Anis', 'email' => 'anis@test.tld']);
+        $this->magic->map('greeter', fn($m, $params) => new GreetWithConstructor($params['name']), ['name' => 'Anis']);
+        $this->magic->map('greet-mailer', GreetMailerWithConstructor::class, );
+        $this->magic->map('greet-mailer', function ($m, $params) {
+            return new GreetMailerWithConstructor($m->get('greeter'), $params['email']);
+        }, ['name' => 'Anis', 'email' => 'anis@test.tld']);
 
         /** @var GreetMailerWithConstructor $obj */
         $obj = $this->magic->get('greet-mailer');
         $this->assertEquals('Mailing "Hello Anis" to anis@test.tld', $obj->mail());
+    }
+
+    public function testCallableCanServeNonObjectTypes()
+    {
+        $this->magic->map('settings', fn($m, $params) => [
+            'type' => 'Dependency Injection Container',
+            'name' => 'Magic',
+        ]);
+
+        $arr = $this->magic->get('settings');
+        $this->assertEquals('Dependency Injection Container', $arr['type']);
+        $this->assertEquals('Magic', $arr['name']);
     }
 
 }

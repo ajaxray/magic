@@ -18,9 +18,14 @@ class Magic implements ContainerInterface
     // Only required if multiple implementation exists
     private array $interfaceMap = [];
 
-    public function map(string $id, string $fqcn, array $options = []) : void
+    public function map(string $id, string|callable $service, array $options = []) : void
     {
-        $this->serviceMap[$id] = ['class' => $fqcn, 'options' => $options];
+        if (is_callable($service)) {
+            $this->serviceMap[$id] = ['callable' => $service, 'options' => $options];
+        } else {
+            $this->serviceMap[$id] = ['class' => $service, 'options' => $options];
+        }
+
     }
 
     /**
@@ -43,6 +48,12 @@ class Magic implements ContainerInterface
     {
         if (isset($this->serviceMap[$id])) {
             $params = array_merge($this->serviceMap[$id]['options'], $this->parameters);
+
+            // If the service was set by a callable, call it with container and params
+            if (isset($this->serviceMap[$id]['callable'])) {
+                return $this->serviceMap[$id]['callable']($this, $params);
+            }
+            // Otherwise, try to resolve the class
             return $this->resolve($this->serviceMap[$id]['class'], $params);
         } elseif (class_exists($id) || interface_exists($id)) {
             // Try auto-wiring
@@ -54,7 +65,7 @@ class Magic implements ContainerInterface
 
     public function has(string $id)
     {
-        return isset($this->serviceMap[$id]);
+        return isset($this->serviceMap[$id]) || class_exists($id);
     }
 
     private function resolve($class, $parameters = [])

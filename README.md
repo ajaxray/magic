@@ -27,7 +27,7 @@ Auto Wiring (Ajaxray\Test\AutoWiring)
 
 Basic Class (Ajaxray\Test\BasicClass)
  ✔ Service mapping without constructor
- ✔ Service mapping with scaler param constructor
+ ✔ Service mapping with scalar param constructor
  ✔ Service mapping with object param constructor
 
 Object Chaining (Ajaxray\Test\ObjectChaining)
@@ -38,4 +38,11 @@ Resolve Interface (Ajaxray\Test\ResolveInterface)
  ✔ Resolve interface type hint to implementation if single implementation
  ✔ Service loading by mapped interface
  ✔ Resolve mapped interface type hint to implementation
+
+Service Binding By Callable (Ajaxray\Test\ServiceBindingByCallable)
+ ✔ Service mapping without constructor
+ ✔ Service mapping with scalar param constructor
+ ✔ Service mapping with object param constructor
+ ✔ Callable can serve non object types
+
 ```
