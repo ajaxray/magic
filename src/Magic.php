@@ -13,10 +13,14 @@ use Psr\Container\ContainerInterface;
 class Magic implements ContainerInterface
 {
     private array $serviceMap = [];
-    private array $parameters = [];
 
-    // Only required if multiple implementation exists
-    private array $interfaceMap = [];
+    // Static Parameters and service configuration options
+    private array $parameters = [
+        '@cacheable' => true
+    ];
+    private array $serviceCache = [];  // Repository of instantiated objects
+    private array $interfaceMap = [];  // Only required if multiple implementation exists
+
 
     public function map(string $id, string|callable $service, array $options = []) : void
     {
@@ -25,7 +29,6 @@ class Magic implements ContainerInterface
         } else {
             $this->serviceMap[$id] = ['class' => $service, 'options' => $options];
         }
-
     }
 
     /**
@@ -46,18 +49,30 @@ class Magic implements ContainerInterface
 
     public function get(string $id)
     {
+        if (isset($this->serviceCache[$id])) {
+            return $this->serviceCache[$id];
+        }
+
+        $service = null;
+        $params = $this->parameters;
+
         if (isset($this->serviceMap[$id])) {
-            $params = array_merge($this->serviceMap[$id]['options'], $this->parameters);
+            $params = array_merge($this->parameters, $this->serviceMap[$id]['options'], );
 
             // If the service was set by a callable, call it with container and params
             if (isset($this->serviceMap[$id]['callable'])) {
-                return $this->serviceMap[$id]['callable']($this, $params);
+                $service = $this->serviceMap[$id]['callable']($this, $params);
+            } else {
+                // Otherwise, try to resolve the class
+                $service = $this->resolve($this->serviceMap[$id]['class'], $params);
             }
-            // Otherwise, try to resolve the class
-            return $this->resolve($this->serviceMap[$id]['class'], $params);
         } elseif (class_exists($id) || interface_exists($id)) {
             // Try auto-wiring
-            return $this->resolve($id, $this->parameters);
+            $service = $this->resolve($id, $params);
+        }
+
+        if (!is_null($service)) {
+            return $params['@cacheable'] === false ? $service : $this->serviceCache[$id] = $service;
         }
 
         throw new NotFoundException($id);
@@ -80,39 +95,10 @@ class Magic implements ContainerInterface
             throw new \RuntimeException("$class is not instantiable");
         }
 
-        $constructor = $classReflection->getConstructor();
-        $constructorParams = $constructor? $constructor->getParameters() : [];
-        $dependencies = [];
+        $dependencies = $this->getDependencies($classReflection, $parameters, $class);
+        $this->serviceCache[$class] = $classReflection->newInstance(...$dependencies);
 
-        foreach ($constructorParams as $constructorParam) {
-
-            $type = $constructorParam->getType();
-
-            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-
-                $paramInstance = $this->resolve($type->getName(), $parameters);
-                array_push($dependencies, $paramInstance);
-
-            } else {
-
-                $name = $constructorParam->getName(); // get the name of param
-
-                // check this param value exist in $parameters
-                if (array_key_exists($name, $parameters)) { // if exist
-                    array_push($dependencies, $parameters[$name]);
-
-                } else {
-                // param not found. Throw unless optional
-                    if (!$constructorParam->isOptional()) {
-                        throw new \RuntimeException("Can not resolve parameter: '$name' of class: '$class'");
-                    }
-                }
-
-            }
-
-        }
-
-        return $classReflection->newInstance(...$dependencies);
+        return $this->serviceCache[$class];
     }
 
     private function findImplementation($iName) :array
@@ -145,5 +131,43 @@ class Magic implements ContainerInterface
             get_declared_classes(),
             fn ($c) => in_array($interfaceName, class_implements($c))
         );
+    }
+
+    /**
+     * @param mixed $classReflection
+     * @param mixed $parameters
+     * @param $class
+     * @return array
+     */
+    private function getDependencies(mixed $classReflection, mixed $parameters, $class): array
+    {
+        $constructor = $classReflection->getConstructor();
+        $constructorParams = $constructor ? $constructor->getParameters() : [];
+        $dependencies = [];
+
+        foreach ($constructorParams as $constructorParam) {
+
+            $type = $constructorParam->getType();
+            if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+
+                $paramInstance = $this->resolve($type->getName(), $parameters);
+                array_push($dependencies, $paramInstance);
+            } else {
+
+                $name = $constructorParam->getName(); // get the name of param
+
+                // check this param value exist in $parameters
+                if (array_key_exists($name, $parameters)) { // if exist
+                    array_push($dependencies, $parameters[$name]);
+
+                } else {
+                    // param not found. Throw unless optional
+                    if (!$constructorParam->isOptional()) {
+                        throw new \RuntimeException("Can not resolve parameter: '$name' of class: '$class'");
+                    }
+                }
+            }
+        }
+        return $dependencies;
     }
 }

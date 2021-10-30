@@ -32,7 +32,7 @@ class AutoWiringTest extends TestCase
     {
         /** @var Simplest $obj */
         $obj = $this->magic->get(Simplest::class);
-        $this->assertEquals('b', $obj->a);
+        $this->assertEquals('value', $obj->property);
     }
 
     public function testResolveClassByNameWithScalarParamConstructor()

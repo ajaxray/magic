@@ -29,7 +29,7 @@ class ServiceBindingByCallableTest extends TestCase
         $this->magic->map('simple', fn($m, $params) => new Simplest());
 
         $obj = $this->magic->get('simple');
-        $this->assertEquals('b', $obj->a);
+        $this->assertEquals('value', $obj->property);
     }
 
     public function testServiceMappingWithScalarParamConstructor()
@@ -44,7 +44,7 @@ class ServiceBindingByCallableTest extends TestCase
     public function testServiceMappingWithObjectParamConstructor()
     {
         $this->magic->map('greeter', fn($m, $params) => new GreetWithConstructor($params['name']), ['name' => 'Anis']);
-        $this->magic->map('greet-mailer', GreetMailerWithConstructor::class, );
+        $this->magic->map('greet-mailer', GreetMailerWithConstructor::class);
         $this->magic->map('greet-mailer', function ($m, $params) {
             return new GreetMailerWithConstructor($m->get('greeter'), $params['email']);
         }, ['name' => 'Anis', 'email' => 'anis@test.tld']);

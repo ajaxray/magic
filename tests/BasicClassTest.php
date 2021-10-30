@@ -28,8 +28,9 @@ class BasicClassTest extends TestCase
     {
         $this->magic->map('simple', Simplest::class);
 
+        /** @var Simplest $obj */
         $obj = $this->magic->get('simple');
-        $this->assertEquals('b', $obj->a);
+        $this->assertEquals('value', $obj->property);
     }
 
     public function testServiceMappingWithScalarParamConstructor()
