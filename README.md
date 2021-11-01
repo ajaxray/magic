@@ -1,14 +1,16 @@
-Magic - PSR 11 compliant tiny Dependency Injection Container
+Magic - tiny Dependency Injection Container for PHP 8
 =========================
 
+A Dependency Injection Container
 Made for fun and exploring PHP Reflection features. 
+But it does what it claims. 
 
 Features
 --------
 
-* PSR-4 autoloading compliant structure
 * Compatible with [PSR-11: Container interface](https://www.php-fig.org/psr/psr-11/)
-* Made for PHP7.4 / PHP8
+* Made for PHP8
+* Service binding by Class, Interface or anonymous functions
 * Resolve dependencies using:
   - Auto-wiring by class/interface name
   - Mapped Name/identifier of a service
@@ -17,8 +19,117 @@ Features
   - Support constructor DI capabilities based on type-hinting
   - Manage the life-circle of the objects (singleton/per request etc)
 * Easy to use to any framework or even a plain php file
+* [PSR-4 autoloading](https://www.php-fig.org/psr/psr-4/) compliant structure
 
-### Testdox
+## Installation
+
+Just pull it in your project using composer.
+```shell
+composer require ajaxray/magic
+```
+Or even you can [download](https://github.com/ajaxray/magic/archive/refs/heads/main.zip) it and include manually.  
+
+## How to use
+
+### Basics 
+
+First, make an instance of `Magic` and bind service class.
+```php
+$this->magic = new Magic();
+$this->magic->map('logger', MyLogger::class);
+```
+
+Now you can get instance of `MyLogger` using the service name `logger`.
+```php
+$obj = $this->magic->get('logger');
+$this->assertEquals('value', $obj->property);
+```
+If `MyLogger` constructor expects some arguments, `Magic` will try to instantiate and supply them too. 
+See next section for more detail on arguments.
+
+### Resolving service arguments
+A service constructor may require some arguments to instantiate it.
+For Object arguments, Magic will try to instantiate the object from other service mappings or by Auto-wiring. 
+Type hint will be used to determine the object type.   
+
+For scalar arguments, you can set them globally. 
+Globally set parameters will be used for all service with the same argument name.
+```php
+$this->magic = new Magic();
+$this->magic->map('db', MyDbConnection::class);
+
+$this->magic->param('host', 'theHostName');
+$this->magic->param('user', 'root');
+$this->magic->param('pass', 'TheSecret');
+
+// parameters will be supplied by name matching automatically
+$this->magic->get('db');  
+```
+
+Service specific argument values (not to be used with other services) can be supplied at the time of service binding.
+```php
+$this->magic = new Magic();
+$this->magic->map('db', MyDbConnection::class, [
+    'host' => 'theHostName',
+    'user' => 'root',
+    'pass' => 'TheSecret',
+]);
+```
+
+_Hint: Arguments can be specified from `.env` file from the coming release._ 
+
+### Auto-wiring 
+
+In most of the cases, services can be loaded without binding anything if its dependencies (constructor params, if any) 
+satisfies the following criteria:
+- Scalar dependencies are resolvable from globally set parameters.
+- Object/Interface dependencies are type hinted and auto-loadable, 
+- Object/Interface dependencies (and their dependencies) satisfies these prerequisites of Auto-wiring or explicitly mapped
+
+```php
+$this->magic = new Magic();
+$this->magic->get(MyDbConnection::class);
+```
+
+### Interface Binding
+
+You can bind an interface as a service. 
+In this case, you have to map the interface with an implementation to be instantiated.
+```php
+$this->magic->map('notifier', NotifierInterface::class, ['receiver' => 'receiver@xyz.tld']);
+$this->magic->mapInterface(NotifierInterface::class, MailNotification::class);
+
+$this->magic->get('notifier')->notify('The message to send');
+```
+
+### Binding using anonymous function 
+You can bind service with Pimple/Laravel style anonymous functions. 
+The function will receive an instance of container and params.
+```php
+$this->magic->map('mailer', function ($m, $params) {
+        $transport = (new Swift_SmtpTransport($m->getParam('smtp.host'), 25))
+            ->setUsername($m->getParam('user'))
+            ->setPassword($m->getParam('pass'))
+        ;
+
+        $mailer = new Swift_Mailer($transport);        
+    }, ['smtp.host' => 'smtp.example.tld']);
+```
+In the above example, `user` and `pass` will be resolved from globally set params.
+
+### Service life cycle (singleton or factory)
+
+By default, if a service instantiate once, it will be reused for subsequent `get()` calls or resolving other constructor parameters.
+But you can disable this behaviour by passing `@cacheable` argument.
+```php
+$this->magic->map('dbMapper', ActiveRecord::class, ['@cacheable' => false]);
+
+// dbMapper will not be cached and will return new instance for every get call
+$aUser = $this->magic->get('dbMapper')->load('User', 3);
+$otherUser = $this->magic->get('dbMapper')->load('User', 36);
+```
+
+## Testdox
 ```text
 PHPUnit 9.5.10 by Sebastian Bergmann and contributors.
 

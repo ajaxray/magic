@@ -42,6 +42,11 @@ class Magic implements ContainerInterface
         $this->parameters[$id] = $value;
     }
 
+    public function getParam(string $id, mixed $default) : mixed
+    {
+        return $this->parameters[$id] ?? $default;
+    }
+
     public function mapInterface(string $interface, string $class, array $options = []) : void
     {
         $this->interfaceMap[$interface] = ['class' => $class, 'options' => $options];
