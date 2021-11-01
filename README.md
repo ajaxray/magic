@@ -55,7 +55,7 @@ Container will try to supply them with different strategy based on argument type
 Magic will try to instantiate the object arguments based on other service definitions or by Auto-wiring. 
 Type hint will be used to determine the type of object.   
 
-# Scalar arguments
+#### Scalar arguments
 You have to set the scalar arguments manually. 
 Parameters can be set globally or during service definition.
 

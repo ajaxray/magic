@@ -6,7 +6,7 @@ use Psr\Container\ContainerInterface;
 
 
 /**
- *  Magic - A basic, auto-wiring enabled Dependency Injection Library for PHP8
+ *  Magic - A tiny auto-wiring enabled Dependency Injection Container for PHP8
  *
  * @author Anis Uddin Ahmad <anis.programmer@gmail.com>
  */
@@ -42,11 +42,21 @@ class Magic implements ContainerInterface
         $this->parameters[$id] = $value;
     }
 
+    /**
+     * Map an interface to an implementation class
+     *
+     * @param string $interface
+     * @param string $class
+     * @param array $options
+     */
     public function mapInterface(string $interface, string $class, array $options = []) : void
     {
         $this->interfaceMap[$interface] = ['class' => $class, 'options' => $options];
     }
 
+    /**
+     * @inheritDoc
+     */
     public function get(string $id)
     {
         if (isset($this->serviceCache[$id])) {
@@ -78,6 +88,9 @@ class Magic implements ContainerInterface
         throw new NotFoundException($id);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function has(string $id)
     {
         return isset($this->serviceMap[$id]) || class_exists($id);
