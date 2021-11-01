@@ -16,9 +16,9 @@ Features
   - Mapped Name/identifier of a service
   - Interface of the service
   - Implementation of the service
-  - Support constructor DI capabilities based on type-hinting
-  - Manage the life-circle of the objects (singleton/per request etc)
-* Easy to use to any framework or even a plain php file
+* Constructor DI capabilities based on Type-hinting
+* Life-circle control of the objects (singleton / new instance per request)
+* Easy to use with any framework (that usages PSR-11 compatible container) or even a plain php file
 * [PSR-4 autoloading](https://www.php-fig.org/psr/psr-4/) compliant structure
 
 ## Installation
@@ -41,36 +41,42 @@ $this->magic->map('logger', MyLogger::class);
 
 Now you can get instance of `MyLogger` using the service name `logger`.
 ```php
-$obj = $this->magic->get('logger');
-$this->assertEquals('value', $obj->property);
+$logger = $this->magic->get('logger');
+$logger->info('Using Magic as dependency injection container');
 ```
 If `MyLogger` constructor expects some arguments, `Magic` will try to instantiate and supply them too. 
 See next section for more detail on arguments.
 
 ### Resolving service arguments
-A service constructor may require some arguments to instantiate it.
-For Object arguments, Magic will try to instantiate the object from other service mappings or by Auto-wiring. 
-Type hint will be used to determine the object type.   
+A service constructor may require some arguments to instantiate it. 
+Container will try to supply them with different strategy based on argument type. 
 
-For scalar arguments, you can set them globally. 
+#### Object arguments
+Magic will try to instantiate the object arguments based on other service definitions or by Auto-wiring. 
+Type hint will be used to determine the type of object.   
+
+# Scalar arguments
+You have to set the scalar arguments manually. 
+Parameters can be set globally or during service definition.
+
 Globally set parameters will be used for all service with the same argument name.
 ```php
-$this->magic = new Magic();
+// e,g, new MyDbConnection($user, $password, $host = 'localhost', $port = 3306);
 $this->magic->map('db', MyDbConnection::class);
 
-$this->magic->param('host', 'theHostName');
+$this->magic->param('host', 'theHostNameOrIP');
 $this->magic->param('user', 'root');
-$this->magic->param('pass', 'TheSecret');
+$this->magic->param('password', 'TheSecret');
 
 // parameters will be supplied by name matching automatically
 $this->magic->get('db');  
 ```
 
-Service specific argument values (not to be used with other services) can be supplied at the time of service binding.
+Service specific argument values can be supplied at the time of service binding. 
+These params will be used with ONLY this specific service. 
 ```php
-$this->magic = new Magic();
 $this->magic->map('db', MyDbConnection::class, [
-    'host' => 'theHostName',
+    'host' => 'theHostNameOrIP',
     'user' => 'root',
     'pass' => 'TheSecret',
 ]);
@@ -104,29 +110,37 @@ $this->magic->get('notifier')->notify('The message to send');
 
 ### Binding using anonymous function 
 You can bind service with Pimple/Laravel style anonymous functions. 
-The function will receive an instance of container and params.
+The function will receive an instance of container and parameters array.
 ```php
+// Simple
+$this->magic->map('greeter', fn($m, $params) => new Greeter($params['name']), ['name' => 'ajaxray']);
+
+// Complex
+$this->magic->param('user', 'sysadmin');
+$this->magic->param('pass', 'TheSecret');
+
 $this->magic->map('mailer', function ($m, $params) {
-        $transport = (new Swift_SmtpTransport($m->getParam('smtp.host'), 25))
-            ->setUsername($m->getParam('user'))
-            ->setPassword($m->getParam('pass'))
+        $transport = (new Swift_SmtpTransport($params['smtp.host'], 25))
+            ->setUsername($params['user'])
+            ->setPassword($params['pass'])
         ;
 
         $mailer = new Swift_Mailer($transport);        
     }, ['smtp.host' => 'smtp.example.tld']);
 ```
-In the above example, `user` and `pass` will be resolved from globally set params.
+In the above example, `user` and `pass` will be resolved from globally set params. 
+That means, the globally set params will be merged with the service specific params while resolving or passing to service binding functions.
 
 ### Service life cycle (singleton or factory)
 
 By default, if a service instantiate once, it will be reused for subsequent `get()` calls or resolving other constructor parameters.
-But you can disable this behaviour by passing `@cacheable` argument.
+But you can disable this behaviour by passing `@cacheable` parameter.
 ```php
 $this->magic->map('dbMapper', ActiveRecord::class, ['@cacheable' => false]);
 
-// dbMapper will not be cached and will return new instance for every get call
+// dbMapper will not be cached and will return new instance for every get() call
 $aUser = $this->magic->get('dbMapper')->load('User', 3);
-$otherUser = $this->magic->get('dbMapper')->load('User', 36);
+$otherUser = $this->magic->get('dbMapper')->load('User', 26);
 ```
 
 ## Testdox
