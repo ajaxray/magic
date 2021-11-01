@@ -1,15 +1,15 @@
 {
     "name": "ajaxray/magic",
-    "description": "Simple Auto-wairing Dependency injection library.",
-    "keywords": ["template", "composer", "package"],
+    "description": "Simple Auto-wiring, PSR-11 compliant Dependency injection library for PHP 8.",
+    "keywords": ["dependency", "dependency-injection-container", "php-di", "php"],
     "license": "MIT",
     "authors": [
         {
-            "name": "Darwin Biler",
-            "email": "buonzz@gmail.com"
+            "name": "Anis Uddin Ahmad",
+            "email": "anis.programmer@gmail.com"
         }
     ],
-    "type": "project",
+    "type": "library",
     "require": {
 		"php": ">=8.0",
         "psr/container": "1.1.1"
