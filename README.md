@@ -35,13 +35,13 @@ Or even you can [download](https://github.com/ajaxray/magic/archive/refs/heads/m
 
 First, make an instance of `Magic` and bind service class.
 ```php
-$this->magic = new Magic();
-$this->magic->map('logger', MyLogger::class);
+$magic = new Magic();
+$magic->map('logger', MyLogger::class);
 ```
 
 Now you can get instance of `MyLogger` using the service name `logger`.
 ```php
-$logger = $this->magic->get('logger');
+$logger = $magic->get('logger');
 $logger->info('Using Magic as dependency injection container');
 ```
 If `MyLogger` constructor expects some arguments, `Magic` will try to instantiate and supply them too. 
@@ -62,20 +62,20 @@ Parameters can be set globally or during service definition.
 Globally set parameters will be used for all service with the same argument name.
 ```php
 // e,g, new MyDbConnection($user, $password, $host = 'localhost', $port = 3306);
-$this->magic->map('db', MyDbConnection::class);
+$magic->map('db', MyDbConnection::class);
 
-$this->magic->param('host', 'theHostNameOrIP');
-$this->magic->param('user', 'root');
-$this->magic->param('password', 'TheSecret');
+$magic->param('host', 'theHostNameOrIP');
+$magic->param('user', 'root');
+$magic->param('password', 'TheSecret');
 
 // parameters will be supplied by name matching automatically
-$this->magic->get('db');  
+$magic->get('db');  
 ```
 
 Service specific argument values can be supplied at the time of service binding. 
 These params will be used with ONLY this specific service. 
 ```php
-$this->magic->map('db', MyDbConnection::class, [
+$magic->map('db', MyDbConnection::class, [
     'host' => 'theHostNameOrIP',
     'user' => 'root',
     'pass' => 'TheSecret',
@@ -93,8 +93,8 @@ satisfies the following criteria:
 - Object/Interface dependencies (and their dependencies) satisfies these prerequisites of Auto-wiring or explicitly mapped
 
 ```php
-$this->magic = new Magic();
-$this->magic->get(MyDbConnection::class);
+$magic = new Magic();
+$magic->get(MyDbConnection::class);
 ```
 
 ### Interface Binding
@@ -102,10 +102,10 @@ $this->magic->get(MyDbConnection::class);
 You can bind an interface as a service. 
 In this case, you have to map the interface with an implementation to be instantiated.
 ```php
-$this->magic->map('notifier', NotifierInterface::class, ['receiver' => 'receiver@xyz.tld']);
-$this->magic->mapInterface(NotifierInterface::class, MailNotification::class);
+$magic->map('notifier', NotifierInterface::class, ['receiver' => 'receiver@xyz.tld']);
+$magic->mapInterface(NotifierInterface::class, MailNotification::class);
 
-$this->magic->get('notifier')->notify('The message to send');
+$magic->get('notifier')->notify('The message to send');
 ```
 
 ### Binding using anonymous function 
@@ -113,13 +113,13 @@ You can bind service with Pimple/Laravel style anonymous functions.
 The function will receive an instance of container and parameters array.
 ```php
 // Simple
-$this->magic->map('greeter', fn($m, $params) => new Greeter($params['name']), ['name' => 'ajaxray']);
+$magic->map('greeter', fn($m, $params) => new Greeter($params['name']), ['name' => 'ajaxray']);
 
 // Complex
-$this->magic->param('user', 'sysadmin');
-$this->magic->param('pass', 'TheSecret');
+$magic->param('user', 'sysadmin');
+$magic->param('pass', 'TheSecret');
 
-$this->magic->map('mailer', function ($m, $params) {
+$magic->map('mailer', function ($m, $params) {
         $transport = (new Swift_SmtpTransport($params['smtp.host'], 25))
             ->setUsername($params['user'])
             ->setPassword($params['pass'])
@@ -136,11 +136,11 @@ That means, the globally set params will be merged with the service specific par
 By default, if a service instantiate once, it will be reused for subsequent `get()` calls or resolving other constructor parameters.
 But you can disable this behaviour by passing `@cacheable` parameter.
 ```php
-$this->magic->map('dbMapper', ActiveRecord::class, ['@cacheable' => false]);
+$magic->map('dbMapper', ActiveRecord::class, ['@cacheable' => false]);
 
 // dbMapper will not be cached and will return new instance for every get() call
-$aUser = $this->magic->get('dbMapper')->load('User', 3);
-$otherUser = $this->magic->get('dbMapper')->load('User', 26);
+$aUser = $magic->get('dbMapper')->load('User', 3);
+$otherUser = $magic->get('dbMapper')->load('User', 26);
 ```
 
 ## Testdox
