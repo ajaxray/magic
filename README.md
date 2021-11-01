@@ -1,9 +1,9 @@
 Magic - tiny Dependency Injection Container for PHP 8
 =========================
 
-A Dependency Injection Container
+A tiny Dependency Injection Container for PHP 8 under 200 lines.
 Made for fun and exploring PHP Reflection features. 
-But it does what it claims. 
+But it does what it claims.  
 
 Features
 --------
@@ -25,7 +25,7 @@ Features
 
 Just pull it in your project using composer.
 ```shell
-composer require ajaxray/magic
+composer require ajaxray/magic --with-all-dependencies
 ```
 Or even you can [download](https://github.com/ajaxray/magic/archive/refs/heads/main.zip) it and include manually.  
 
@@ -133,7 +133,7 @@ That means, the globally set params will be merged with the service specific par
 
 ### Service life cycle (singleton or factory)
 
-By default, if a service instantiate once, it will be reused for subsequent `get()` calls or resolving other constructor parameters.
+By default, if a service is instantiated once, it will be reused for subsequent `get()` calls or resolving other constructor parameters.
 But you can disable this behaviour by passing `@cacheable` parameter.
 ```php
 $magic->map('dbMapper', ActiveRecord::class, ['@cacheable' => false]);
