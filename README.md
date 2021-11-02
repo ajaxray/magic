@@ -3,7 +3,7 @@ Magic - tiny Dependency Injection Container for PHP 8
 
 A tiny Dependency Injection Container for PHP 8 under 200 lines.
 Made for fun and exploring PHP Reflection features. 
-But it does what it claims.  
+But it does what it claims. 
 
 Features
 --------
@@ -20,6 +20,8 @@ Features
 * Life-circle control of the objects (singleton / new instance per request)
 * Easy to use with any framework (that usages PSR-11 compatible container) or even a plain php file
 * [PSR-4 autoloading](https://www.php-fig.org/psr/psr-4/) compliant structure
+
+_Caution: This library is still going through initial development phase!_
 
 ## Installation
 
@@ -125,7 +127,7 @@ $magic->map('mailer', function ($m, $params) {
             ->setPassword($params['pass'])
         ;
 
-        $mailer = new Swift_Mailer($transport);        
+        return new Swift_Mailer($transport);        
     }, ['smtp.host' => 'smtp.example.tld']);
 ```
 In the above example, `user` and `pass` will be resolved from globally set params. 

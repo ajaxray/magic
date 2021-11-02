@@ -1,5 +1,7 @@
-<?php namespace Ajaxray\Magic;
+<?php
+declare(strict_types=1);
 
+namespace Ajaxray\Magic;
 
 use Ajaxray\Magic\Exception\NotFoundException;
 use Psr\Container\ContainerInterface;
@@ -22,7 +24,7 @@ class Magic implements ContainerInterface
     private array $interfaceMap = [];  // Only required if multiple implementation exists
 
 
-    public function map(string $id, string|callable $service, array $options = []) : void
+    public function map(string $id, string|callable $service, array $options = []): void
     {
         if (is_callable($service)) {
             $this->serviceMap[$id] = ['callable' => $service, 'options' => $options];
@@ -37,7 +39,7 @@ class Magic implements ContainerInterface
      * @param string $id
      * @param mixed $value
      */
-    public function param(string $id, mixed $value) : void
+    public function param(string $id, mixed $value): void
     {
         $this->parameters[$id] = $value;
     }
@@ -49,7 +51,7 @@ class Magic implements ContainerInterface
      * @param string $class
      * @param array $options
      */
-    public function mapInterface(string $interface, string $class, array $options = []) : void
+    public function mapInterface(string $interface, string $class, array $options = []): void
     {
         $this->interfaceMap[$interface] = ['class' => $class, 'options' => $options];
     }
@@ -67,7 +69,7 @@ class Magic implements ContainerInterface
         $params = $this->parameters;
 
         if (isset($this->serviceMap[$id])) {
-            $params = array_merge($this->parameters, $this->serviceMap[$id]['options'], );
+            $params = array_merge($this->parameters, $this->serviceMap[$id]['options']);
 
             // If the service was set by a callable, call it with container and params
             if (isset($this->serviceMap[$id]['callable'])) {
@@ -96,7 +98,15 @@ class Magic implements ContainerInterface
         return isset($this->serviceMap[$id]) || class_exists($id);
     }
 
-    private function resolve($class, $parameters = [])
+    /**
+     * Instantiate a class with providing dependencies (by resolving constructor arguments)
+     *
+     * @param string $class Name of the Class to instantiate
+     * @param array $parameters
+     * @return object
+     * @throws \ReflectionException
+     */
+    private function resolve(string $class, array $parameters = []): object
     {
         $classReflection = new \ReflectionClass($class);
 
@@ -109,12 +119,16 @@ class Magic implements ContainerInterface
         }
 
         $dependencies = $this->getDependencies($classReflection, $parameters, $class);
-        $this->serviceCache[$class] = $classReflection->newInstance(...$dependencies);
 
-        return $this->serviceCache[$class];
+        return $classReflection->newInstance(...$dependencies);
     }
 
-    private function findImplementation($iName) :array
+    /**
+     * Find concrete Class of an interface
+     *
+     * @throws \ReflectionException
+     */
+    private function findImplementation(string $iName): array
     {
         // Check if any class was mapped for the interface
         if (isset($this->interfaceMap[$iName])) {
@@ -135,8 +149,6 @@ class Magic implements ContainerInterface
 
     /**
      * Get list of classes that implements an Interface
-     * @param string $interfaceName
-     * @return array
      */
     private function whoImplements(string $interfaceName) :array
     {
@@ -147,12 +159,11 @@ class Magic implements ContainerInterface
     }
 
     /**
-     * @param mixed $classReflection
-     * @param mixed $parameters
-     * @param $class
-     * @return array
+     * Prepare constructor arguments of a class
+     *
+     * @throws \ReflectionException
      */
-    private function getDependencies(mixed $classReflection, mixed $parameters, $class): array
+    private function getDependencies(mixed $classReflection, mixed $parameters, string $class): array
     {
         $constructor = $classReflection->getConstructor();
         $constructorParams = $constructor ? $constructor->getParameters() : [];
