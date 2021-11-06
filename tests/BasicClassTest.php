@@ -44,9 +44,12 @@ class BasicClassTest extends TestCase
 
     public function testServiceMappingWithObjectParamConstructor()
     {
-        // email - requires by GreetMailerWithConstructor's constructor
-        // name - requires by it's constructor param GreetWithConstructor's constructor
-        $this->magic->map('greet-mailer', GreetMailerWithConstructor::class, ['name' => 'Anis', 'email' => 'anis@test.tld']);
+
+        // name - requires by it's constructor param GreetWithConstructor's constructor, so defining at container level
+        $this->magic->param('name', 'Anis');
+
+        // email - requires by GreetMailerWithConstructor's constructor only
+        $this->magic->map('greet-mailer', GreetMailerWithConstructor::class, ['email' => 'anis@test.tld']);
 
         /** @var GreetMailerWithConstructor $obj */
         $obj = $this->magic->get('greet-mailer');

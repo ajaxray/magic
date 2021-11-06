@@ -150,7 +150,7 @@ class Magic implements ContainerInterface
     /**
      * Get list of classes that implements an Interface
      */
-    private function whoImplements(string $interfaceName) :array
+    private function whoImplements(string $interfaceName): array
     {
         return array_filter(
             get_declared_classes(),
@@ -169,15 +169,14 @@ class Magic implements ContainerInterface
         $constructorParams = $constructor ? $constructor->getParameters() : [];
         $dependencies = [];
 
+        /** @var \ReflectionParameter $constructorParam */
         foreach ($constructorParams as $constructorParam) {
 
             $type = $constructorParam->getType();
             if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                array_push($dependencies, $this->resolveDependency($constructorParam));
 
-                $paramInstance = $this->resolve($type->getName(), $parameters);
-                array_push($dependencies, $paramInstance);
             } else {
-
                 $name = $constructorParam->getName(); // get the name of param
 
                 // check this param value exist in $parameters
@@ -192,6 +191,31 @@ class Magic implements ContainerInterface
                 }
             }
         }
+
         return $dependencies;
+    }
+
+    /**
+     * Resolve Constructor parameters
+     *
+     * @param \ReflectionParameter $constructorParam
+     * @return mixed
+     */
+    private function resolveDependency(\ReflectionParameter $constructorParam): mixed
+    {
+        $typeName = $constructorParam->getType()->getName();
+
+        // First check if any service defined with parameter name
+        if ($this->has($constructorParam->name)) {
+            $instance = $this->get($constructorParam->name);
+
+            // Confirm instance type
+            if ($instance instanceof $typeName) {
+                return $instance;
+            }
+        }
+
+        // Otherwise, resolve from Class name
+        return $this->get($typeName);
     }
 }
