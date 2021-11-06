@@ -54,14 +54,36 @@ A service constructor may require some arguments to instantiate it.
 Container will try to supply them with different strategy based on argument type. 
 
 #### Object arguments
-Magic will try to instantiate the object arguments based on other service definitions or by Auto-wiring. 
-Type hint will be used to determine the type of object.   
+Type hint will be used to determine the type of object.
+Magic will try to instantiate the object arguments based on -
+- If the name of parameter matches any defined service identifier. Type of object will be checked for safety.  
+- If any service defined with the Class/Interface name. Interface should be mapped to a concrete class in that case. 
+- Auto-wiring. Scalar parameters should be resolvable from container-wide defined parameters. 
+
+For example, let's think we have this constructor in a class -  
+```php
+public function __construct(\Doctrine\DBAL\Connection $dbConn)   
+```
+The following definitions will be tried sequentially.  
+Based on name matching -
+```php
+$container->map('dbConn', function($m, $params) {
+    return \Doctrine\DBAL\DriverManager::getConnection(['url' => $params['dsn']]);
+});
+```
+Based on Type matching - 
+```php
+$container->map(Connection::class, function($m, $params) {
+    return \Doctrine\DBAL\DriverManager::getConnection(['url' => $params['dsn']]);
+});
+```
+And finally, auto-wiring will be tried if none of the above definitions found. 
 
 #### Scalar arguments
 You have to set the scalar arguments manually. 
-Parameters can be set globally or during service definition.
+Parameters can be set container-wide or during service definition.
 
-Globally set parameters will be used for all service with the same argument name.
+Container-wide set parameters will be used for all service with the same argument name.
 ```php
 // e,g, new MyDbConnection($user, $password, $host = 'localhost', $port = 3306);
 $magic->map('db', MyDbConnection::class);
