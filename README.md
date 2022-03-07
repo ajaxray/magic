@@ -5,6 +5,9 @@ A tiny Dependency Injection Container for PHP 8 under 200 lines.
 Made for fun and exploring PHP Reflection features. 
 But it does what it claims. 
 
+**Does it really work?**  
+Yes, it does! [Here](https://github.com/ajaxray/slim-magic) is a sample applocation with [Slim Framework](https://www.slimframework.com) using _Magic_ as Dependency Injection Container.
+
 Features
 --------
 
